@@ -1,0 +1,12 @@
+.DS_Store
+audio/
+output/
+model/
+windows_usage/
+venv/
+db/
+cache/
+__pycache__/
+build/
+dist/
+.conda/
