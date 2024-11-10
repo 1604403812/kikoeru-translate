@@ -139,6 +139,11 @@ def saveTaskToFile(task:Dict):
     with open(task_file_path, "w", encoding="utf8") as f:
         json.dump(task, f, indent=4)
 
+def saveLrcToFile(save_name,content):
+    with open(os.path.join(input_audio_dir, save_name), 'wb') as fd:
+        for chunk in content.iter_content(chunk_size=128):
+            fd.write(chunk)
+        
 def format_seconds(
     seconds: float,
     decimal_marker: str = ".",
@@ -179,6 +184,20 @@ def checkTaskIsOwnByMe(task:Dict)->bool:
         print("检查任务状态失败：", e)
         raise e
 
+def uploadLrc(task,content):
+    try:
+        r = session.get(f"{kikoeru_url}/drama/lyric/translate/upload", params={
+            "id": task["id"],
+            "secret": task["secret"],
+        })
+        data = json.loads(r.content)
+        upload = session.put(data['url'], headers=data['headers'],data=content,verify=False)
+        print(json.loads(upload.content))
+        if upload.status_code==201 or upload.status_code==200:
+            return True
+    except:
+        return False
+    return False
 # task = {id: 0, secret: "777f7f7f77fd7"}
 def processTask(task):
     print("存储task信息到本地文件中") # 目前一个worker一次只处理一个task
@@ -216,8 +235,19 @@ def processTask(task):
     try:
         print("翻译中...")
         lrc_content = transcribe_audio(audio_file_path)
-        success = True
         print("翻译成功")
+        
+        print("上传中...")
+        lrc_name = ''.join(audio_file_name.split('.')[:-1]) + '.lrc'
+        lrc_file_path = os.path.join(input_audio_dir, lrc_name)
+        saveLrcToFile(lrc_name,lrc_content)
+        
+        result = uploadLrc(task,lrc_content)
+        if result:
+            print("上传成功")
+        else:
+            print("上传失败，请手动上传")
+        success = True
     except Exception as e:
         print("transcripting error, ", e)
         success = False
@@ -227,6 +257,7 @@ def processTask(task):
     print(" 任务完成，删除本地记录")
     os.unlink(audio_file_path)
     os.unlink(task_file_path)
+    # os.unlink(lrc_file_path)
 
 def clearOldTaskAtStartup():
     print("尝试处理上一次没有完成的翻译任务")
