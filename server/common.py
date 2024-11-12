@@ -43,7 +43,7 @@ def getServerPort()->int:
     return int(os.environ.get("PORT", "8820"))
 
 def getKikoeruUrl()->str:
-    url = os.environ.get("KIKOERU_URL", 'http://localhost:8000')
+    url = os.environ.get("KIKOERU_URL", 'http://192.168.1.1:8000')
     if url is None:
         raise Exception("kikoeur url not configed")
     return url.rstrip("/") # remove trailing /
